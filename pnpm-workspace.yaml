@@ -1,0 +1,15 @@
+# Configuración de pnpm (pnpm 11+ ya no lee el campo "pnpm" en package.json).
+# Ver https://pnpm.io/settings
+
+# Paquetes a los que SÍ se les permite ejecutar scripts post-install.
+# esbuild lo necesita para generar/verificar su binario nativo.
+onlyBuiltDependencies:
+  - esbuild
+
+# Aprobación explícita de cada build script (pnpm 11+ exige opt-in por paquete).
+allowBuilds:
+  esbuild: true
+
+# Desactiva el "auto install" agresivo que pnpm 11 ejecuta antes
+# de cada script — evita exit 1 ruidoso por warnings de build scripts.
+verifyDepsBeforeRun: false

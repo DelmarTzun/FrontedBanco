@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-ssr
+.vite
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# pnpm
+.pnpm-store
+.pnpm-debug.log*
+# Nota: pnpm-lock.yaml SÍ se versiona en git (no se ignora)

@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------
+ * Design tokens & globals
+ * ------------------------------------------------------------------ */
+:root {
+  color-scheme: light dark;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar refinado */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(109, 93, 251, 0.25);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(109, 93, 251, 0.45);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Selección */
+::selection {
+  background: rgba(109, 93, 251, 0.35);
+  color: inherit;
+}
+
+/* Quitar el spinner de inputs number */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* ------------------------------------------------------------------
+ * Layer components: estilos reutilizables
+ * ------------------------------------------------------------------ */
+@layer components {
+  .glass {
+    @apply bg-white/70 dark:bg-ink-800/50 backdrop-blur-xl border border-white/60 dark:border-white/5;
+  }
+  .glass-soft {
+    @apply bg-white/55 dark:bg-ink-800/40 backdrop-blur-lg border border-white/40 dark:border-white/5;
+  }
+  .surface {
+    @apply bg-white dark:bg-ink-800 border border-ink-100 dark:border-white/5;
+  }
+  .text-muted {
+    @apply text-ink-500 dark:text-ink-300;
+  }
+  .ring-focus {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-ink-900;
+  }
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-500 via-brand-400 to-accent-400;
+  }
+  .divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-ink-200 dark:via-white/10 to-transparent;
+  }
+  .skeleton {
+    @apply relative overflow-hidden bg-ink-100 dark:bg-ink-700/60 rounded-xl;
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.18) 50%,
+      transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: shimmer 1.6s infinite;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .card-3d {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+}
+
+/* ------------------------------------------------------------------
+ * Background ambiental con malla degradada
+ * ------------------------------------------------------------------ */
+.app-bg {
+  background-color: #f7f7fb;
+  background-image:
+    radial-gradient(at 12% 18%, rgba(109, 93, 251, 0.18) 0px, transparent 50%),
+    radial-gradient(at 88% 8%, rgba(34, 211, 238, 0.18) 0px, transparent 45%),
+    radial-gradient(at 70% 92%, rgba(244, 114, 182, 0.14) 0px, transparent 55%);
+}
+.dark .app-bg {
+  background-color: #0c0c16;
+  background-image:
+    radial-gradient(at 12% 18%, rgba(109, 93, 251, 0.32) 0px, transparent 50%),
+    radial-gradient(at 88% 8%, rgba(34, 211, 238, 0.22) 0px, transparent 45%),
+    radial-gradient(at 70% 92%, rgba(244, 114, 182, 0.12) 0px, transparent 55%);
+}
