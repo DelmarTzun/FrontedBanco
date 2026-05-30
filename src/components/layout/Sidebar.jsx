@@ -58,15 +58,24 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Overlay móvil */}
+      {/* Overlay móvil
+       *
+       * IMPORTANTE: NO usamos `backdrop-blur` aquí. En iOS Safari y Chrome
+       * Android, al cerrarse el overlay con la animación de `exit` (opacity → 0)
+       * mientras simultáneamente se monta la nueva ruta, el `backdrop-filter`
+       * deja "fantasmas" borrosos sobre el contenido nuevo hasta que el usuario
+       * recarga. El degradado oscuro por sí solo ya basta para separar el menú
+       * del fondo, y es órdenes de magnitud más barato gráficamente.
+       */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
             onClick={closeSidebar}
-            className="fixed inset-0 z-30 bg-ink-900/60 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-30 bg-ink-900/70 lg:hidden"
           />
         )}
       </AnimatePresence>
