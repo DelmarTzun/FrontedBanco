@@ -62,11 +62,35 @@ input[type='number'] {
  * Layer components: estilos reutilizables
  * ------------------------------------------------------------------ */
 @layer components {
+  /* `isolation: isolate` fuerza a cada panel "glass" a tener su propio stacking
+   * context. Sin esto, en Safari iOS y en Chrome Android el `backdrop-filter`
+   * deja "fantasmas" borrosos sobre el viewport tras navegaciones SPA y solo se
+   * limpian al recargar la página.
+   *
+   * `transform: translateZ(0)` (`transform-gpu`) promueve el panel a su propia
+   * capa de composición en la GPU, evitando además artefactos por scroll.
+   */
   .glass {
-    @apply bg-white/70 dark:bg-ink-800/50 backdrop-blur-xl border border-white/60 dark:border-white/5;
+    @apply bg-white/70 dark:bg-ink-800/50 backdrop-blur-xl border border-white/60 dark:border-white/5 isolate transform-gpu;
   }
   .glass-soft {
-    @apply bg-white/55 dark:bg-ink-800/40 backdrop-blur-lg border border-white/40 dark:border-white/5;
+    @apply bg-white/55 dark:bg-ink-800/40 backdrop-blur-lg border border-white/40 dark:border-white/5 isolate transform-gpu;
+  }
+
+  /* Móvil: bajamos drásticamente la intensidad del blur en pantallas pequeñas.
+   * El render del blur es muy caro en GPUs móviles y es el origen principal de
+   * los frames "borrosos" tras un cambio de ruta. Visualmente sigue luciendo
+   * vidrio, pero sin la sobrecarga gráfica.
+   */
+  @media (max-width: 767px) {
+    .glass {
+      backdrop-filter: blur(6px) saturate(140%);
+      -webkit-backdrop-filter: blur(6px) saturate(140%);
+    }
+    .glass-soft {
+      backdrop-filter: blur(4px) saturate(130%);
+      -webkit-backdrop-filter: blur(4px) saturate(130%);
+    }
   }
   .surface {
     @apply bg-white dark:bg-ink-800 border border-ink-100 dark:border-white/5;

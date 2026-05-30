@@ -74,9 +74,17 @@ export default function Sidebar() {
       <aside
         className={clsx(
           'fixed lg:sticky top-0 z-40 h-screen w-[280px] shrink-0 transition-transform duration-300 ease-out',
-          'lg:translate-x-0',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          // En escritorio el sidebar siempre es visible.
+          'lg:translate-x-0 lg:visible',
+          // En móvil, cuando está cerrado lo movemos fuera de pantalla Y lo
+          // marcamos como `invisible` para que el navegador no calcule el
+          // `backdrop-filter` del panel oculto (causa de los "fantasmas" de
+          // blur sobre el resto del UI tras navegar entre rutas).
+          sidebarOpen
+            ? 'translate-x-0 visible'
+            : '-translate-x-full invisible lg:visible'
         )}
+        aria-hidden={!sidebarOpen}
       >
         <div className="flex h-full flex-col p-4">
           <div className="glass rounded-3xl p-5 flex flex-col flex-1 shadow-glass">
