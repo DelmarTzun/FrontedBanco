@@ -1,7 +1,13 @@
 /**
  * Formateadores reutilizables.
- * Por defecto trabajamos en Quetzales (GTQ) porque la API es de Guatemala.
+ *
+ * - Trabajamos en quetzales (GTQ) porque la API es de Guatemala.
+ * - Todas las fechas se renderizan en zona horaria America/Guatemala
+ *   (UTC-6, sin DST), independientemente del navegador del usuario,
+ *   para que el "hoy" mostrado coincida con el "hoy" del banco.
  */
+
+export const ZONA_HORARIA_BANCO = 'America/Guatemala';
 
 const currencyFormatter = new Intl.NumberFormat('es-GT', {
   style: 'currency',
@@ -24,20 +30,83 @@ const dateFmt = new Intl.DateTimeFormat('es-GT', {
   day: '2-digit',
   month: 'short',
   year: 'numeric',
+  timeZone: ZONA_HORARIA_BANCO,
 });
 const timeFmt = new Intl.DateTimeFormat('es-GT', {
   hour: '2-digit',
   minute: '2-digit',
+  hour12: false,
+  timeZone: ZONA_HORARIA_BANCO,
 });
 const dateTimeFmt = new Intl.DateTimeFormat('es-GT', {
   dateStyle: 'medium',
   timeStyle: 'short',
+  hour12: false,
+  timeZone: ZONA_HORARIA_BANCO,
 });
 
 export const fmtDate = (iso) => (iso ? dateFmt.format(new Date(iso)) : '—');
 export const fmtTime = (iso) => (iso ? timeFmt.format(new Date(iso)) : '—');
 export const fmtDateTime = (iso) =>
   iso ? dateTimeFmt.format(new Date(iso)) : '—';
+
+/**
+ * Devuelve los componentes Y/M/D del momento `iso` interpretados en hora del
+ * banco (Guatemala). Útil para inputs `<input type="date">` y para calcular
+ * rangos "hoy" / "este mes" desde la perspectiva del banco.
+ *
+ *   const { year, month, day } = partsEnGuatemala(new Date());
+ */
+export function partsEnGuatemala(iso = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZone: ZONA_HORARIA_BANCO,
+  }).formatToParts(new Date(iso));
+
+  const lookup = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  return {
+    year: Number(lookup.year),
+    month: Number(lookup.month),
+    day: Number(lookup.day),
+    hour: Number(lookup.hour),
+    minute: Number(lookup.minute),
+    second: Number(lookup.second),
+    // "YYYY-MM-DD" listo para usar en <input type="date">
+    iso: `${lookup.year}-${lookup.month}-${lookup.day}`,
+  };
+}
+
+/**
+ * Devuelve "YYYY-MM-DD" del día actual en hora del banco.
+ * Útil como `max` o `defaultValue` de un <input type="date">.
+ */
+export const hoyEnGuatemalaIso = () => partsEnGuatemala(new Date()).iso;
+
+/**
+ * Convierte un valor de <input type="datetime-local"> (o "datetime-local"
+ * tipo "YYYY-MM-DDTHH:mm") interpretándolo como hora del banco (Guatemala,
+ * UTC-6 sin DST) y devuelve el ISO UTC equivalente, listo para enviar al
+ * backend. Útil para filtros de bitácora/kardex.
+ *
+ *   "2026-06-01T22:30" (Guatemala) → "2026-06-02T04:30:00.000Z"
+ *
+ * Devuelve `null` si el input está vacío.
+ */
+export function inputLocalGuatemalaAIsoUtc(localDatetime) {
+  if (!localDatetime) return null;
+  // Aseguramos formato con segundos para que Date acepte el offset explícito.
+  const conSegundos =
+    localDatetime.length === 16 ? `${localDatetime}:00` : localDatetime;
+  // Guatemala es UTC-6 fijo, sin horario de verano: el offset es siempre -06:00.
+  const d = new Date(`${conSegundos}-06:00`);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
 
 /** "5 mins ago", "hace 2 horas"… */
 export function fmtRelative(iso) {

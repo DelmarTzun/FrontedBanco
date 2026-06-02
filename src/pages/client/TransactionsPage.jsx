@@ -1,12 +1,10 @@
 import { useMemo, useState } from 'react';
 import {
   Receipt,
-  ArrowDownLeft,
   ArrowUpRight,
   Search,
   Filter,
   RefreshCcw,
-  Plus,
   Minus,
 } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
@@ -24,6 +22,7 @@ import { useKardex } from '../../hooks/useKardex';
 import { operacionesApi } from '../../api/operaciones.api';
 import { pushToast } from '../../store/notificationStore';
 import { fmtMoney } from '../../lib/format';
+import { LIMITES_DB, validarMontoPositivo } from '../../lib/validaciones';
 
 const FILTERS = [
   { key: 'all', label: 'Todos' },
@@ -38,7 +37,7 @@ export default function TransactionsPage() {
   });
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState('all');
-  const [openModal, setOpenModal] = useState(null); // 'dep' | 'ret' | null
+  const [openRetiro, setOpenRetiro] = useState(false);
   const [montoModal, setMontoModal] = useState('');
   const [refModal, setRefModal] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -55,33 +54,50 @@ export default function TransactionsPage() {
     });
   }, [data, q, filter]);
 
-  const onSubmitMov = async (e) => {
+  const montoModalErr = montoModal ? validarMontoPositivo(montoModal) : null;
+  const saldoActual = cuentaActiva?.saldo ?? 0;
+  const excedeRetiro =
+    montoModal && Number(montoModal) > saldoActual
+      ? `El monto supera tu saldo disponible (${fmtMoney(saldoActual)}).`
+      : null;
+
+  const cerrarRetiro = () => {
+    if (enviando) return;
+    setOpenRetiro(false);
+    setMontoModal('');
+    setRefModal('');
+  };
+
+  const onSubmitRetiro = async (e) => {
     e.preventDefault();
     const monto = Number(montoModal);
-    if (!monto || monto <= 0) {
-      pushToast({ type: 'error', title: 'Monto inválido', message: 'Ingresa un valor > 0.' });
+    const err = validarMontoPositivo(monto);
+    if (err) {
+      pushToast({ type: 'error', title: 'Monto inválido', message: err });
       return;
     }
     if (!cuentaActiva) return;
+    if (excedeRetiro) {
+      pushToast({
+        type: 'warning',
+        title: 'Saldo insuficiente',
+        message: excedeRetiro,
+      });
+      return;
+    }
     setEnviando(true);
     try {
-      const fn =
-        openModal === 'dep'
-          ? operacionesApi.depositar
-          : operacionesApi.retirar;
-      const res = await fn({
+      const res = await operacionesApi.retirar({
         idCuenta: cuentaActiva.idCuenta,
         monto,
         referencia: refModal || null,
       });
       pushToast({
         type: 'success',
-        title: openModal === 'dep' ? 'Depósito exitoso' : 'Retiro exitoso',
+        title: 'Retiro exitoso',
         message: `Saldo posterior: ${fmtMoney(res.saldoPosterior)}`,
       });
-      setOpenModal(null);
-      setMontoModal('');
-      setRefModal('');
+      cerrarRetiro();
       refresh();
     } catch (err) {
       pushToast({
@@ -101,23 +117,14 @@ export default function TransactionsPage() {
         description="Historial cronológico de los movimientos de tu cuenta."
         icon={Receipt}
         actions={
-          <>
-            <Button
-              variant="secondary"
-              size="md"
-              leftIcon={Minus}
-              onClick={() => setOpenModal('ret')}
-            >
-              Retirar
-            </Button>
-            <Button
-              size="md"
-              leftIcon={Plus}
-              onClick={() => setOpenModal('dep')}
-            >
-              Depositar
-            </Button>
-          </>
+          <Button
+            size="md"
+            leftIcon={Minus}
+            onClick={() => setOpenRetiro(true)}
+            disabled={!cuentaActiva || saldoActual <= 0}
+          >
+            Retirar
+          </Button>
         }
       />
 
@@ -201,42 +208,50 @@ export default function TransactionsPage() {
       </Card>
 
       <Modal
-        open={!!openModal}
-        onClose={() => setOpenModal(null)}
-        title={openModal === 'dep' ? 'Depósito a tu cuenta' : 'Retiro de tu cuenta'}
-        description={
-          openModal === 'dep'
-            ? 'Suma fondos a la cuenta activa.'
-            : 'Retira efectivo de la cuenta activa.'
-        }
+        open={openRetiro}
+        onClose={cerrarRetiro}
+        title="Retiro de tu cuenta"
+        description={`Retira efectivo de la cuenta ${
+          cuentaActiva?.noCuenta || '—'
+        }. Saldo disponible: ${fmtMoney(saldoActual)}.`}
       >
-        <form onSubmit={onSubmitMov} className="space-y-4">
+        <form onSubmit={onSubmitRetiro} className="space-y-4">
           <Input
-            label="Monto"
+            label="Monto a retirar"
             type="number"
             min="0.01"
             step="0.01"
             value={montoModal}
             onChange={(e) => setMontoModal(e.target.value)}
             placeholder="0.00"
-            leftIcon={openModal === 'dep' ? ArrowDownLeft : ArrowUpRight}
+            leftIcon={ArrowUpRight}
+            error={excedeRetiro || montoModalErr}
+            disabled={enviando}
           />
           <Input
             label="Referencia (opcional)"
             value={refModal}
             onChange={(e) => setRefModal(e.target.value)}
-            placeholder="Ej. Pago de salario"
+            placeholder="Ej. Retiro en cajero"
+            maxLength={LIMITES_DB.bitacora.referencia}
+            hint={`Máximo ${LIMITES_DB.bitacora.referencia} caracteres`}
+            disabled={enviando}
           />
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" onClick={() => setOpenModal(null)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={cerrarRetiro}
+              disabled={enviando}
+            >
               Cancelar
             </Button>
             <Button
               type="submit"
               loading={enviando}
-              variant={openModal === 'dep' ? 'success' : 'primary'}
+              disabled={!!montoModalErr || !!excedeRetiro || !montoModal}
             >
-              Confirmar
+              Confirmar retiro
             </Button>
           </div>
         </form>

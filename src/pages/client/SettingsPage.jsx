@@ -59,10 +59,15 @@ export default function SettingsPage() {
     if (!nueva) errs.nueva = 'Ingresa la nueva contraseña.';
     else if (nueva.length < 8)
       errs.nueva = 'La nueva contraseña debe tener al menos 8 caracteres.';
+    else if (nueva.length > 64)
+      errs.nueva = 'La nueva contraseña no puede superar 64 caracteres.';
+    else if (!/[A-Za-z]/.test(nueva) || !/\d/.test(nueva))
+      errs.nueva = 'Debe combinar al menos una letra y un número.';
     else if (nueva === actual)
       errs.nueva = 'La nueva contraseña debe ser distinta a la actual.';
-    if (nueva !== confirma)
-      errs.confirma = 'La confirmación no coincide.';
+    if (!confirma) errs.confirma = 'Confirma la nueva contraseña.';
+    else if (nueva !== confirma)
+      errs.confirma = 'La confirmación no coincide con la nueva contraseña.';
     setErrores(errs);
     return Object.keys(errs).length === 0;
   };
@@ -233,6 +238,7 @@ export default function SettingsPage() {
             error={errores.actual}
             autoComplete="current-password"
             disabled={enviando}
+            maxLength={64}
           />
 
           <Input
@@ -242,9 +248,10 @@ export default function SettingsPage() {
             value={nueva}
             onChange={(e) => setNueva(e.target.value)}
             error={errores.nueva}
-            hint="Mínimo 8 caracteres, distinta a la actual."
+            hint="Mínimo 8 caracteres, combina letras y números."
             autoComplete="new-password"
             disabled={enviando}
+            maxLength={64}
           />
 
           <Input
@@ -256,6 +263,7 @@ export default function SettingsPage() {
             error={errores.confirma}
             autoComplete="new-password"
             disabled={enviando}
+            maxLength={64}
           />
 
           <div className="flex items-center justify-end gap-2 pt-2">

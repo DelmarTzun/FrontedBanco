@@ -7,6 +7,8 @@ import {
   TrendingUp,
   ArrowRight,
   Activity,
+  Banknote,
+  RefreshCcw,
 } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 import Card, { CardBody, CardHeader } from '../../components/ui/Card';
@@ -15,11 +17,30 @@ import Button from '../../components/ui/Button';
 import Skeleton from '../../components/ui/Skeleton';
 import EmptyState from '../../components/ui/EmptyState';
 import { cuentasApi } from '../../api/cuentas.api';
+import { bitacoraApi } from '../../api/bitacora.api';
 import { pushToast } from '../../store/notificationStore';
 
 export default function AdminDashboardPage() {
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [metricas, setMetricas] = useState(null);
+  const [loadingMetricas, setLoadingMetricas] = useState(true);
+
+  const cargarMetricas = async () => {
+    setLoadingMetricas(true);
+    try {
+      const data = await bitacoraApi.metricasAdmin();
+      setMetricas(data);
+    } catch (err) {
+      pushToast({
+        type: 'error',
+        title: 'No se pudieron cargar las métricas',
+        message: err.message,
+      });
+    } finally {
+      setLoadingMetricas(false);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -33,10 +54,15 @@ export default function AdminDashboardPage() {
         if (alive) setLoading(false);
       }
     })();
+    cargarMetricas();
     return () => {
       alive = false;
     };
   }, []);
+
+  // Si las métricas todavía no llegaron, usamos clientes.length como fallback
+  // optimista para que la primera tarjeta no se vea "0" durante la carga.
+  const totalClientes = metricas?.clientesRegistrados ?? clientes.length;
 
   return (
     <div className="space-y-6">
@@ -45,42 +71,69 @@ export default function AdminDashboardPage() {
         description="Visión general del padrón de cuentahabientes y operaciones."
         icon={ShieldCheck}
         actions={
-          <Link to="/admin/crear-cliente">
-            <Button leftIcon={UserPlus} size="md">
-              Nuevo cliente
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={cargarMetricas}
+              disabled={loadingMetricas}
+              aria-label="Recargar métricas"
+              title="Recargar métricas"
+            >
+              <RefreshCcw
+                className={`h-4 w-4 ${loadingMetricas ? 'animate-spin' : ''}`}
+              />
             </Button>
-          </Link>
+            <Link to="/admin/depositos">
+              <Button variant="secondary" leftIcon={Banknote} size="md">
+                Depositar
+              </Button>
+            </Link>
+            <Link to="/admin/crear-cliente">
+              <Button leftIcon={UserPlus} size="md">
+                Nuevo cliente
+              </Button>
+            </Link>
+          </div>
         }
       />
 
       <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <BalanceCard
-          label="Clientes registrados"
-          amount={clientes.length}
-          icon={Users}
-          tone="brand"
-          format="number"
-        />
-        <BalanceCard
-          label="Operaciones hoy"
-          amount={0}
-          icon={Activity}
-          tone="accent"
-          format="number"
-        />
-        <BalanceCard
-          label="Volumen mensual"
-          amount={0}
-          icon={TrendingUp}
-          tone="success"
-        />
-        <BalanceCard
-          label="Cuentas inactivas"
-          amount={0}
-          icon={ShieldCheck}
-          tone="warning"
-          format="number"
-        />
+        {loadingMetricas && !metricas ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 w-full rounded-2xl" />
+          ))
+        ) : (
+          <>
+            <BalanceCard
+              label="Clientes registrados"
+              amount={totalClientes}
+              icon={Users}
+              tone="brand"
+              format="number"
+            />
+            <BalanceCard
+              label="Operaciones hoy"
+              amount={metricas?.operacionesHoy ?? 0}
+              icon={Activity}
+              tone="accent"
+              format="number"
+            />
+            <BalanceCard
+              label="Volumen mensual"
+              amount={metricas?.volumenMensual ?? 0}
+              icon={TrendingUp}
+              tone="success"
+            />
+            <BalanceCard
+              label="Cuentas inactivas"
+              amount={metricas?.cuentasInactivas ?? 0}
+              icon={ShieldCheck}
+              tone="warning"
+              format="number"
+            />
+          </>
+        )}
       </section>
 
       <Card>

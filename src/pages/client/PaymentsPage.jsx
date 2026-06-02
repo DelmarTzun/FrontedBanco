@@ -14,10 +14,18 @@ import PageHeader from '../../components/ui/PageHeader';
 import Card, { CardBody, CardHeader } from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import { SERVICIOS, TIPO_SERVICIO } from '../../lib/tipoServicio';
+import { SERVICIOS, TIPO_SERVICIO, getServicio } from '../../lib/tipoServicio';
 import { pagosApi } from '../../api/pagos.api';
 import { pushToast } from '../../store/notificationStore';
 import { fmtMoney } from '../../lib/format';
+import {
+  LIMITES_DB,
+  REGLAS,
+  soloDigitosMax,
+  formatearTarjeta,
+  validarMes,
+  validarAnio,
+} from '../../lib/validaciones';
 import clsx from 'clsx';
 
 export default function PaymentsPage() {
@@ -35,10 +43,43 @@ export default function PaymentsPage() {
   const [pagando, setPagando] = useState(false);
   const [resultado, setResultado] = useState(null);
 
-  const servicio = SERVICIOS.find((s) => s.id === tipo);
+  const servicio = getServicio(tipo);
+
+  // Validación del identificador con la regla específica del servicio
+  const identificadorErr =
+    identificador.length > 0 && !servicio.regex.test(identificador)
+      ? servicio.mensajeInvalido
+      : null;
+
+  const tarjetaSinEspacios = tarjeta.replace(/\s/g, '');
+  const tarjetaErr =
+    tarjeta.length > 0 && !REGLAS.numeroTarjeta.regex.test(tarjetaSinEspacios)
+      ? 'La tarjeta debe tener 16 dígitos.'
+      : null;
+  const pinErr =
+    pin.length > 0 && !REGLAS.pin.regex.test(pin)
+      ? 'El PIN debe tener entre 4 y 6 dígitos.'
+      : null;
+  const mesErr = mes ? validarMes(mes) : null;
+  const anioErr = anio ? validarAnio(anio) : null;
 
   const onValidar = async () => {
-    if (!identificador) return;
+    if (!identificador) {
+      pushToast({
+        type: 'warning',
+        title: 'Falta el identificador',
+        message: 'Ingresa el identificador del servicio antes de validar.',
+      });
+      return;
+    }
+    if (identificadorErr) {
+      pushToast({
+        type: 'warning',
+        title: 'Identificador inválido',
+        message: identificadorErr,
+      });
+      return;
+    }
     setValidando(true);
     setValidacion(null);
     setDeuda(null);
@@ -79,10 +120,26 @@ export default function PaymentsPage() {
       });
       return;
     }
+    if (tarjetaErr || pinErr || mesErr || anioErr) {
+      pushToast({
+        type: 'warning',
+        title: 'Revisa los datos de la tarjeta',
+        message: tarjetaErr || pinErr || mesErr || anioErr,
+      });
+      return;
+    }
+    if (!tarjetaSinEspacios || !pin) {
+      pushToast({
+        type: 'warning',
+        title: 'Datos incompletos',
+        message: 'Ingresa el número de tarjeta y el PIN.',
+      });
+      return;
+    }
     setPagando(true);
     try {
       const res = await pagosApi.ejecutar({
-        numeroTarjeta: tarjeta.replace(/\s/g, ''),
+        numeroTarjeta: tarjetaSinEspacios,
         pin,
         tipoServicio: tipo,
         identificador,
@@ -123,6 +180,7 @@ export default function PaymentsPage() {
             key={s.id}
             onClick={() => {
               setTipo(s.id);
+              setIdentificador('');
               setDeuda(null);
               setValidacion(null);
               setResultado(null);
@@ -161,11 +219,17 @@ export default function PaymentsPage() {
                     label="Identificador"
                     placeholder={servicio.placeholder}
                     value={identificador}
-                    onChange={(e) => setIdentificador(e.target.value)}
+                    onChange={(e) =>
+                      setIdentificador(servicio.sanitizar(e.target.value))
+                    }
                     leftIcon={Hash}
+                    maxLength={servicio.maxLength}
+                    inputMode={servicio.inputMode}
+                    error={identificadorErr}
+                    hint={`Máximo ${servicio.maxLength} caracteres`}
                   />
                 </div>
-                <div className="self-end">
+                <div className="self-start mt-6">
                   <Button
                     type="button"
                     variant="secondary"
@@ -183,46 +247,55 @@ export default function PaymentsPage() {
                   label="Número de tarjeta"
                   placeholder="0000 0000 0000 0000"
                   value={tarjeta}
-                  onChange={(e) => setTarjeta(e.target.value)}
+                  onChange={(e) => setTarjeta(formatearTarjeta(e.target.value))}
                   leftIcon={CreditCard}
                   maxLength={19}
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  error={tarjetaErr}
                 />
                 <Input
                   label="PIN"
                   type="password"
                   value={pin}
-                  onChange={(e) => setPin(e.target.value)}
+                  onChange={(e) => setPin(soloDigitosMax(e.target.value, 6))}
                   placeholder="••••"
                   leftIcon={Lock}
                   maxLength={6}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  error={pinErr}
+                  hint="4 a 6 dígitos"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <Input
                   label="Mes"
-                  type="number"
-                  min="1"
-                  max="12"
                   value={mes}
-                  onChange={(e) => setMes(e.target.value)}
+                  onChange={(e) => setMes(soloDigitosMax(e.target.value, 2))}
                   placeholder="MM"
                   leftIcon={Calendar}
+                  maxLength={2}
+                  inputMode="numeric"
+                  error={mesErr}
                 />
                 <Input
                   label="Año"
-                  type="number"
-                  min="2024"
-                  max="2099"
                   value={anio}
-                  onChange={(e) => setAnio(e.target.value)}
+                  onChange={(e) => setAnio(soloDigitosMax(e.target.value, 4))}
                   placeholder="YYYY"
+                  maxLength={4}
+                  inputMode="numeric"
+                  error={anioErr}
                 />
                 <Input
                   label="Referencia"
                   value={referencia}
                   onChange={(e) => setReferencia(e.target.value)}
                   placeholder="Opcional"
+                  maxLength={LIMITES_DB.bitacora.referencia}
+                  hint={`Máx ${LIMITES_DB.bitacora.referencia}`}
                 />
               </div>
 
@@ -232,7 +305,16 @@ export default function PaymentsPage() {
                   size="lg"
                   rightIcon={ArrowRight}
                   loading={pagando}
-                  disabled={!deuda || !validacion?.esValido}
+                  disabled={
+                    !deuda ||
+                    !validacion?.esValido ||
+                    !!tarjetaErr ||
+                    !!pinErr ||
+                    !!mesErr ||
+                    !!anioErr ||
+                    !tarjetaSinEspacios ||
+                    !pin
+                  }
                 >
                   Pagar {deuda ? fmtMoney(deuda.monto) : ''}
                 </Button>

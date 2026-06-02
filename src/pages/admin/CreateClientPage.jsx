@@ -19,6 +19,14 @@ import Button from '../../components/ui/Button';
 import { TIPOS_CUENTA } from '../../lib/tipoCuenta';
 import { cuentasApi } from '../../api/cuentas.api';
 import { pushToast } from '../../store/notificationStore';
+import {
+  LIMITES_DB,
+  REGLAS,
+  soloDigitosMax,
+  validarDpi,
+  validarTelefonoGT,
+  validarEmail,
+} from '../../lib/validaciones';
 import clsx from 'clsx';
 
 const empty = {
@@ -38,8 +46,34 @@ export default function CreateClientPage() {
 
   const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
+  // Validaciones campo a campo
+  const errores = {
+    nombre: !form.nombre.trim() ? 'Ingresa el nombre.' : null,
+    apellido: !form.apellido.trim() ? 'Ingresa el apellido.' : null,
+    dpi: form.dpi ? validarDpi(form.dpi) : 'El DPI es obligatorio.',
+    nit:
+      !form.nit.trim()
+        ? 'Ingresa el NIT (o "CF" si es consumidor final).'
+        : !REGLAS.nit.regex.test(form.nit.trim()) && form.nit.trim().toUpperCase() !== 'CF'
+        ? 'NIT no válido. Usa solo números (con opción a dígito verificador o K).'
+        : null,
+    email: validarEmail(form.email),
+    celular: validarTelefonoGT(form.celular),
+  };
+  const hayErrores = Object.values(errores).some(Boolean);
+
   const onSubmit = async (e) => {
     e.preventDefault();
+    if (hayErrores) {
+      pushToast({
+        type: 'warning',
+        title: 'Revisa el formulario',
+        message:
+          Object.values(errores).find(Boolean) ||
+          'Hay datos inválidos en el formulario.',
+      });
+      return;
+    }
     setLoading(true);
     try {
       const res = await cuentasApi.crearPerfil({
@@ -94,6 +128,8 @@ export default function CreateClientPage() {
                   onChange={onChange}
                   required
                   leftIcon={User}
+                  maxLength={LIMITES_DB.cliente.nombre}
+                  error={form.nombre ? errores.nombre : null}
                 />
                 <Input
                   label="Apellido"
@@ -102,15 +138,25 @@ export default function CreateClientPage() {
                   onChange={onChange}
                   required
                   leftIcon={User}
+                  maxLength={LIMITES_DB.cliente.apellido}
+                  error={form.apellido ? errores.apellido : null}
                 />
                 <Input
-                  label="DPI"
+                  label="DPI / CUI"
                   name="dpi"
                   value={form.dpi}
-                  onChange={onChange}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      dpi: soloDigitosMax(e.target.value, 13),
+                    }))
+                  }
                   required
                   leftIcon={IdCard}
                   maxLength={13}
+                  inputMode="numeric"
+                  hint="13 dígitos (sin guiones)"
+                  error={form.dpi ? errores.dpi : null}
                 />
                 <Input
                   label="NIT"
@@ -119,6 +165,9 @@ export default function CreateClientPage() {
                   onChange={onChange}
                   required
                   leftIcon={Hash}
+                  maxLength={LIMITES_DB.cliente.nit}
+                  hint='Solo números (o "CF" si no aplica)'
+                  error={form.nit ? errores.nit : null}
                 />
                 <Input
                   label="Correo electrónico"
@@ -127,13 +176,25 @@ export default function CreateClientPage() {
                   value={form.email}
                   onChange={onChange}
                   leftIcon={Mail}
+                  maxLength={LIMITES_DB.cliente.email}
+                  autoComplete="email"
+                  error={form.email ? errores.email : null}
                 />
                 <Input
                   label="Celular"
                   name="celular"
                   value={form.celular}
-                  onChange={onChange}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      celular: soloDigitosMax(e.target.value, 8),
+                    }))
+                  }
                   leftIcon={Phone}
+                  maxLength={8}
+                  inputMode="numeric"
+                  hint="8 dígitos"
+                  error={form.celular ? errores.celular : null}
                 />
               </div>
 
@@ -182,6 +243,7 @@ export default function CreateClientPage() {
                   size="lg"
                   loading={loading}
                   rightIcon={ArrowRight}
+                  disabled={hayErrores}
                 >
                   Crear cuentahabiente
                 </Button>

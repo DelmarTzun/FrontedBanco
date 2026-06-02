@@ -1,7 +1,12 @@
 import { http } from './http';
 
 export const operacionesApi = {
-  /** POST /api/Operaciones/deposito  (CLIENTE) */
+  /**
+   * POST /api/Operaciones/deposito  (ADMIN)
+   *
+   * Los depósitos ya no se hacen desde el portal del cliente: solo el
+   * administrador (ventanilla) puede acreditar fondos a una cuenta.
+   */
   async depositar({ idCuenta, monto, referencia }) {
     const { data } = await http.post('/Operaciones/deposito', {
       IdCuenta: idCuenta,

@@ -9,4 +9,15 @@ export const bitacoraApi = {
     const { data } = await http.get(`/Bitacora/kardex/${idCuenta}`, { params });
     return data; // MovimientoBitacoraDto[]
   },
+
+  /**
+   * GET /api/Bitacora/metricas-admin  (ADMIN)
+   * Devuelve métricas agregadas para el dashboard administrativo:
+   *   { clientesRegistrados, operacionesHoy, volumenMensual,
+   *     cuentasInactivas, generadoUtc }
+   */
+  async metricasAdmin() {
+    const { data } = await http.get('/Bitacora/metricas-admin');
+    return data;
+  },
 };

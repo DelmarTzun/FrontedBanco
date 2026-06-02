@@ -18,6 +18,12 @@ import { useCuentas } from '../../hooks/useCuentas';
 import { operacionesApi } from '../../api/operaciones.api';
 import { pushToast } from '../../store/notificationStore';
 import { fmtMoney } from '../../lib/format';
+import {
+  LIMITES_DB,
+  soloDigitosMax,
+  validarIdCuenta,
+  validarMontoPositivo,
+} from '../../lib/validaciones';
 
 export default function TransferPage() {
   const { cuentas, cuentaActiva, setCuentaActiva, refresh } = useCuentas();
@@ -30,6 +36,12 @@ export default function TransferPage() {
   const saldo = cuentaActiva?.saldo || 0;
   const montoNum = Number(monto) || 0;
   const excede = montoNum > saldo;
+  const destinoErr = destino ? validarIdCuenta(destino) : null;
+  const mismaCuenta =
+    destino && cuentaActiva && Number(destino) === cuentaActiva.idCuenta
+      ? 'No puedes transferir a la misma cuenta de origen.'
+      : null;
+  const montoErr = monto ? validarMontoPositivo(monto) : null;
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -39,6 +51,14 @@ export default function TransferPage() {
         type: 'error',
         title: 'Datos incompletos',
         message: 'Completa la cuenta destino y el monto.',
+      });
+      return;
+    }
+    if (destinoErr || mismaCuenta || montoErr) {
+      pushToast({
+        type: 'warning',
+        title: 'Revisa los datos',
+        message: destinoErr || mismaCuenta || montoErr,
       });
       return;
     }
@@ -114,12 +134,14 @@ export default function TransferPage() {
                 />
                 <Input
                   label="ID cuenta destino"
-                  type="number"
                   value={destino}
-                  onChange={(e) => setDestino(e.target.value)}
+                  onChange={(e) => setDestino(soloDigitosMax(e.target.value, 10))}
                   placeholder="Ej. 105"
                   leftIcon={Hash}
+                  inputMode="numeric"
+                  maxLength={10}
                   hint="Identificador interno del banco"
+                  error={destinoErr || mismaCuenta}
                 />
               </div>
               <Input
@@ -131,7 +153,11 @@ export default function TransferPage() {
                 onChange={(e) => setMonto(e.target.value)}
                 placeholder="0.00"
                 leftIcon={Send}
-                error={excede ? 'El monto supera tu saldo disponible' : undefined}
+                error={
+                  excede
+                    ? 'El monto supera tu saldo disponible'
+                    : montoErr || undefined
+                }
               />
               <Input
                 label="Descripción (opcional)"
@@ -139,6 +165,8 @@ export default function TransferPage() {
                 onChange={(e) => setDescripcion(e.target.value)}
                 placeholder="Ej. Pago renta noviembre"
                 leftIcon={FileText}
+                maxLength={LIMITES_DB.bitacora.referencia}
+                hint={`Máximo ${LIMITES_DB.bitacora.referencia} caracteres`}
               />
 
               <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 pt-2">
@@ -151,7 +179,14 @@ export default function TransferPage() {
                   rightIcon={ArrowRight}
                   loading={loading}
                   className="sm:w-auto"
-                  disabled={excede}
+                  disabled={
+                    excede ||
+                    !!destinoErr ||
+                    !!mismaCuenta ||
+                    !!montoErr ||
+                    !destino ||
+                    !monto
+                  }
                 >
                   Enviar dinero
                 </Button>

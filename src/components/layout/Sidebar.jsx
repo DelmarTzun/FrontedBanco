@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   History,
   Building2,
+  Banknote,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +37,7 @@ const ADMIN_NAV = [
   { to: '/admin/clientes', label: 'Clientes', icon: Users },
   { to: '/admin/crear-cliente', label: 'Crear cliente', icon: UserPlus },
   { to: '/admin/activar-cuenta', label: 'Activar cuenta', icon: ShieldCheck },
+  { to: '/admin/depositos', label: 'Depósitos', icon: Banknote },
   { to: '/admin/cuentas-internas', label: 'Cuentas internas', icon: Building2 },
   { to: '/admin/bitacora', label: 'Bitácora', icon: History },
 ];

@@ -7,7 +7,6 @@ import {
   Shuffle,
   Receipt,
   PiggyBank,
-  Plus,
   ChevronRight,
   TrendingUp,
 } from 'lucide-react';
@@ -139,11 +138,11 @@ export default function DashboardPage() {
                 gradient="from-amber-500 to-rose-500"
               />
               <QuickAction
-                icon={Plus}
-                label="Depositar"
-                description="Cargar saldo a la cuenta"
+                icon={ArrowUpRight}
+                label="Retirar"
+                description="Saca efectivo de tu cuenta"
                 onClick={() => (window.location.href = '/app/transacciones')}
-                gradient="from-emerald-500 to-teal-500"
+                gradient="from-rose-500 to-orange-500"
               />
               <QuickAction
                 icon={PiggyBank}

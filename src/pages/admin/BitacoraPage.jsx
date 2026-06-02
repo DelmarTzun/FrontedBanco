@@ -20,7 +20,7 @@ import TransactionRow from '../../components/banking/TransactionRow';
 import { cuentasApi } from '../../api/cuentas.api';
 import { bitacoraApi } from '../../api/bitacora.api';
 import { pushToast } from '../../store/notificationStore';
-import { fmtMoney } from '../../lib/format';
+import { fmtMoney, inputLocalGuatemalaAIsoUtc } from '../../lib/format';
 import { getTipoCuenta } from '../../lib/tipoCuenta';
 
 const FILTERS = [
@@ -104,10 +104,14 @@ export default function BitacoraPage() {
     }
     setCargandoKardex(true);
     try {
-      // El backend espera fechas UTC. Convertimos el datetime-local a ISO.
+      // El backend espera fechas UTC. El <input type="datetime-local">
+      // produce strings sin zona; los interpretamos como hora del banco
+      // (Guatemala, UTC-6) y los convertimos a UTC antes de enviarlos.
       const params = { idCuenta };
-      if (desde) params.desde = new Date(desde).toISOString();
-      if (hasta) params.hasta = new Date(hasta).toISOString();
+      const desdeIso = inputLocalGuatemalaAIsoUtc(desde);
+      const hastaIso = inputLocalGuatemalaAIsoUtc(hasta);
+      if (desdeIso) params.desde = desdeIso;
+      if (hastaIso) params.hasta = hastaIso;
       const data = await bitacoraApi.kardex(params);
       setMovimientos(Array.isArray(data) ? data : []);
     } catch (err) {

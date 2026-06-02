@@ -35,19 +35,24 @@ export default function LoginPage() {
     return <Navigate to={dest} replace />;
   }
 
-  const onChange = (e) =>
+  const onChange = (e) => {
+    setError(null); // limpia mensaje al volver a tipear
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    if (!form.credencial || !form.password) {
-      setError('Completa todos los campos.');
+    if (!form.credencial.trim() || !form.password) {
+      setError('Ingresa tu usuario/correo y tu contraseña para continuar.');
       return;
     }
     setLoading(true);
     try {
-      const data = await authApi.login(form);
+      const data = await authApi.login({
+        credencial: form.credencial.trim(),
+        password: form.password,
+      });
       login({
         token: data.token,
         idUsuario: data.idUsuario,
@@ -64,7 +69,29 @@ export default function LoginPage() {
         (String(data.rol).toUpperCase() === 'ADMIN' ? '/admin' : '/app');
       navigate(dest, { replace: true });
     } catch (err) {
-      setError(err.message || 'Credenciales inválidas.');
+      // err viene normalizado del interceptor de http.js
+      let msg;
+      if (err?.status === 0) {
+        msg = 'No pudimos conectar con el banco. Revisa tu conexión a internet.';
+      } else if (err?.status === 401) {
+        msg =
+          'Credenciales incorrectas. Revisa tu usuario o correo y tu contraseña.';
+      } else if (err?.status === 400) {
+        msg =
+          err.message ||
+          'La información del formulario no es válida. Verifica los campos.';
+      } else if (err?.status >= 500) {
+        msg =
+          'El servicio del banco está respondiendo con un error. Intenta nuevamente en unos minutos.';
+      } else {
+        msg = err?.message || 'No pudimos iniciar tu sesión. Intenta de nuevo.';
+      }
+      setError(msg);
+      pushToast({
+        type: 'error',
+        title: 'No pudimos iniciar sesión',
+        message: msg,
+      });
     } finally {
       setLoading(false);
     }
@@ -212,11 +239,13 @@ export default function LoginPage() {
 
                 {error && (
                   <motion.div
+                    role="alert"
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-300"
+                    className="flex items-start gap-2 rounded-xl border border-rose-400/30 bg-rose-500/10 px-3 py-2.5 text-sm text-rose-600 dark:text-rose-300"
                   >
-                    {error}
+                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span className="leading-snug">{error}</span>
                   </motion.div>
                 )}
 

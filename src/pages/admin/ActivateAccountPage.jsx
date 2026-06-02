@@ -7,6 +7,9 @@ import Button from '../../components/ui/Button';
 import { operacionesApi } from '../../api/operaciones.api';
 import { pushToast } from '../../store/notificationStore';
 import { fmtMoney } from '../../lib/format';
+import { soloDigitosMax, validarIdCuenta } from '../../lib/validaciones';
+
+const MONTO_MINIMO_APERTURA = 100;
 
 export default function ActivateAccountPage() {
   const [idCuenta, setIdCuenta] = useState('');
@@ -14,13 +17,22 @@ export default function ActivateAccountPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
+  const idErr = idCuenta ? validarIdCuenta(idCuenta) : null;
+  const montoErr =
+    monto && Number(monto) < MONTO_MINIMO_APERTURA
+      ? `El depósito mínimo de apertura es Q${MONTO_MINIMO_APERTURA}.00.`
+      : null;
+
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!idCuenta || Number(monto) < 100) {
+    if (idErr || montoErr || !idCuenta || !monto) {
       pushToast({
         type: 'warning',
         title: 'Datos inválidos',
-        message: 'ID válido y depósito mínimo Q100.',
+        message:
+          idErr ||
+          montoErr ||
+          `Indica el ID de la cuenta y un monto ≥ Q${MONTO_MINIMO_APERTURA}.`,
       });
       return;
     }
@@ -63,21 +75,24 @@ export default function ActivateAccountPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="ID de la cuenta"
-                  type="number"
                   value={idCuenta}
-                  onChange={(e) => setIdCuenta(e.target.value)}
+                  onChange={(e) => setIdCuenta(soloDigitosMax(e.target.value, 10))}
                   placeholder="Ej. 121"
                   leftIcon={Hash}
+                  inputMode="numeric"
+                  maxLength={10}
+                  error={idErr}
                 />
                 <Input
                   label="Depósito de activación"
                   type="number"
                   step="0.01"
-                  min="100"
+                  min={MONTO_MINIMO_APERTURA}
                   value={monto}
                   onChange={(e) => setMonto(e.target.value)}
                   leftIcon={Coins}
-                  hint="Mínimo Q100.00"
+                  hint={`Mínimo Q${MONTO_MINIMO_APERTURA}.00`}
+                  error={montoErr}
                 />
               </div>
               <div className="flex justify-end pt-2">
@@ -87,6 +102,7 @@ export default function ActivateAccountPage() {
                   loading={loading}
                   rightIcon={ArrowRight}
                   variant="success"
+                  disabled={!!idErr || !!montoErr || !idCuenta || !monto}
                 >
                   Activar cuenta
                 </Button>
