@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Activity,
   Banknote,
+  Receipt,
   RefreshCcw,
 } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
@@ -87,6 +88,11 @@ export default function AdminDashboardPage() {
             <Link to="/admin/depositos">
               <Button variant="secondary" leftIcon={Banknote} size="md">
                 Depositar
+              </Button>
+            </Link>
+            <Link to="/admin/pagos-ventanilla">
+              <Button variant="secondary" leftIcon={Receipt} size="md">
+                Cobro ventanilla
               </Button>
             </Link>
             <Link to="/admin/crear-cliente">

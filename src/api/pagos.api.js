@@ -45,4 +45,29 @@ export const pagosApi = {
     });
     return data; // PagoServicioResultadoDto
   },
+
+  /**
+   * POST /api/Pagos/ventanilla  (ADMIN)
+   * Pago de servicios públicos en ventanilla del banco (efectivo).
+   * No requiere tarjeta ni PIN: el operador recibe el dinero en caja y
+   * el sistema lo distribuye 95/5 manteniendo las comisiones intactas.
+   */
+  async ejecutarVentanilla({
+    tipoServicio,
+    identificador,
+    monto,
+    referenciaCliente,
+    nombrePagador,
+    documentoPagador,
+  }) {
+    const { data } = await http.post('/Pagos/ventanilla', {
+      TipoServicio: tipoServicio,
+      Identificador: identificador,
+      Monto: monto,
+      ReferenciaCliente: referenciaCliente ?? null,
+      NombrePagador: nombrePagador ?? null,
+      DocumentoPagador: documentoPagador ?? null,
+    });
+    return data; // PagoVentanillaResultadoDto
+  },
 };

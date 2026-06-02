@@ -22,6 +22,9 @@ const ClientsPage = lazy(() => import('../pages/admin/ClientsPage'));
 const CreateClientPage = lazy(() => import('../pages/admin/CreateClientPage'));
 const ActivateAccountPage = lazy(() => import('../pages/admin/ActivateAccountPage'));
 const DepositsPage = lazy(() => import('../pages/admin/DepositsPage'));
+const ServicePaymentsCounterPage = lazy(() =>
+  import('../pages/admin/ServicePaymentsCounterPage')
+);
 const BitacoraPage = lazy(() => import('../pages/admin/BitacoraPage'));
 const InternalAccountsPage = lazy(() =>
   import('../pages/admin/InternalAccountsPage')
@@ -66,6 +69,10 @@ export default function AppRoutes() {
           <Route path="crear-cliente" element={<CreateClientPage />} />
           <Route path="activar-cuenta" element={<ActivateAccountPage />} />
           <Route path="depositos" element={<DepositsPage />} />
+          <Route
+            path="pagos-ventanilla"
+            element={<ServicePaymentsCounterPage />}
+          />
           <Route path="cuentas-internas" element={<InternalAccountsPage />} />
           <Route path="bitacora" element={<BitacoraPage />} />
         </Route>
