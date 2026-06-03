@@ -19,15 +19,15 @@ export const SERVICIOS = [
     id: TIPO_SERVICIO.UNIVERSIDAD,
     nombre: 'Universidad',
     descripcion: 'Pago universitario por código de carné',
-    placeholder: 'Carné del estudiante (10 caracteres)',
+    placeholder: 'Carné del estudiante (11 caracteres)',
     icon: GraduationCap,
     accent: 'from-violet-500 to-fuchsia-500',
-    maxLength: 10,
+    maxLength: 11,
     inputMode: 'text',
-    // El carné UMG admite dígitos, letras y guiones (ej. 1001-26-005)
-    regex: /^[\w-]{1,10}$/,
-    sanitizar: (v) => String(v).replace(/[^\w-]/g, '').slice(0, 10),
-    mensajeInvalido: 'El carné debe tener máximo 10 caracteres válidos.',
+    // El carné UMG admite dígitos, letras y guiones (ej. 1001-26-0050)
+    regex: /^[\w-]{1,11}$/,
+    sanitizar: (v) => String(v).replace(/[^\w-]/g, '').slice(0, 11),
+    mensajeInvalido: 'El carné debe tener máximo 11 caracteres válidos.',
   },
   {
     id: TIPO_SERVICIO.TELEFONIA,
