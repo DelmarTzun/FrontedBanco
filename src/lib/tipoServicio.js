@@ -45,15 +45,22 @@ export const SERVICIOS = [
   {
     id: TIPO_SERVICIO.ENERGIA,
     nombre: 'Energía eléctrica',
-    descripcion: 'Pago por número de contador (8 dígitos)',
-    placeholder: 'Número de contador (8 dígitos)',
+    descripcion: 'Pago por número de contador (8 caracteres)',
+    placeholder: 'Número de contador (8 caracteres)',
     icon: Zap,
     accent: 'from-amber-400 to-orange-500',
     maxLength: 8,
-    inputMode: 'numeric',
-    regex: /^\d{8}$/,
-    sanitizar: (v) => String(v).replace(/\D+/g, '').slice(0, 8),
-    mensajeInvalido: 'El número de contador debe tener exactamente 8 dígitos.',
+    // Los contadores de la empresa eléctrica pueden mezclar letras y dígitos
+    // (ej. "AB123456", "12345678"), así que aceptamos alfanuméricos hasta 8.
+    inputMode: 'text',
+    regex: /^[A-Za-z0-9]{8}$/,
+    sanitizar: (v) =>
+      String(v)
+        .replace(/[^A-Za-z0-9]+/g, '')
+        .toUpperCase()
+        .slice(0, 8),
+    mensajeInvalido:
+      'El número de contador debe tener exactamente 8 caracteres (letras o números).',
   },
 ];
 

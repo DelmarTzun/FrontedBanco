@@ -45,10 +45,45 @@ const dateTimeFmt = new Intl.DateTimeFormat('es-GT', {
   timeZone: ZONA_HORARIA_BANCO,
 });
 
-export const fmtDate = (iso) => (iso ? dateFmt.format(new Date(iso)) : '—');
-export const fmtTime = (iso) => (iso ? timeFmt.format(new Date(iso)) : '—');
-export const fmtDateTime = (iso) =>
-  iso ? dateTimeFmt.format(new Date(iso)) : '—';
+/**
+ * Construye un `Date` a partir del valor crudo recibido del backend
+ * interpretándolo SIEMPRE como UTC.
+ *
+ * Por qué: MySQL guarda DATETIME sin zona y EF Core los devuelve con
+ * `Kind = Unspecified`, lo que provoca que .NET los serialice como
+ * `"2026-06-03T03:52:00"` (sin sufijo `Z`). El navegador, al recibir esa
+ * cadena, asume hora local del usuario, no UTC. Para evitar regresiones
+ * en los datos ya persistidos sin `Z`, aquí lo normalizamos.
+ *
+ *   - Si el valor ya trae `Z` o un offset (`±HH:MM`), respetamos el
+ *     timestamp tal cual.
+ *   - Si NO trae sufijo de zona, asumimos que era UTC (el backend siempre
+ *     persiste con `fecha.ObtenerUtcAhora()`) y le añadimos `Z`.
+ *   - Si recibimos un `Date` o un número, lo usamos directo.
+ */
+function parsearISOComoUtc(input) {
+  if (input == null) return null;
+  if (input instanceof Date) return input;
+  if (typeof input === 'number') return new Date(input);
+  const s = String(input).trim();
+  if (!s) return null;
+  // Detecta sufijo de zona: "Z" o "+HH:MM" / "-HH:MM" al final.
+  const tieneZona = /(Z|[+-]\d{2}:?\d{2})$/.test(s);
+  return new Date(tieneZona ? s : `${s}Z`);
+}
+
+export const fmtDate = (iso) => {
+  const d = parsearISOComoUtc(iso);
+  return d ? dateFmt.format(d) : '—';
+};
+export const fmtTime = (iso) => {
+  const d = parsearISOComoUtc(iso);
+  return d ? timeFmt.format(d) : '—';
+};
+export const fmtDateTime = (iso) => {
+  const d = parsearISOComoUtc(iso);
+  return d ? dateTimeFmt.format(d) : '—';
+};
 
 /**
  * Devuelve los componentes Y/M/D del momento `iso` interpretados en hora del
@@ -58,6 +93,7 @@ export const fmtDateTime = (iso) =>
  *   const { year, month, day } = partsEnGuatemala(new Date());
  */
 export function partsEnGuatemala(iso = new Date()) {
+  const base = parsearISOComoUtc(iso) ?? new Date();
   const parts = new Intl.DateTimeFormat('en-CA', {
     year: 'numeric',
     month: '2-digit',
@@ -67,7 +103,7 @@ export function partsEnGuatemala(iso = new Date()) {
     second: '2-digit',
     hour12: false,
     timeZone: ZONA_HORARIA_BANCO,
-  }).formatToParts(new Date(iso));
+  }).formatToParts(base);
 
   const lookup = Object.fromEntries(parts.map((p) => [p.type, p.value]));
   return {
@@ -110,8 +146,9 @@ export function inputLocalGuatemalaAIsoUtc(localDatetime) {
 
 /** "5 mins ago", "hace 2 horas"… */
 export function fmtRelative(iso) {
-  if (!iso) return '—';
-  const diffMs = Date.now() - new Date(iso).getTime();
+  const fechaParseada = parsearISOComoUtc(iso);
+  if (!fechaParseada) return '—';
+  const diffMs = Date.now() - fechaParseada.getTime();
   const sec = Math.round(diffMs / 1000);
   const rtf = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
   if (sec < 60) return rtf.format(-sec, 'second');
@@ -119,9 +156,9 @@ export function fmtRelative(iso) {
   if (min < 60) return rtf.format(-min, 'minute');
   const h = Math.round(min / 60);
   if (h < 24) return rtf.format(-h, 'hour');
-  const d = Math.round(h / 24);
-  if (d < 30) return rtf.format(-d, 'day');
-  const mo = Math.round(d / 30);
+  const dias = Math.round(h / 24);
+  if (dias < 30) return rtf.format(-dias, 'day');
+  const mo = Math.round(dias / 30);
   if (mo < 12) return rtf.format(-mo, 'month');
   return rtf.format(-Math.round(mo / 12), 'year');
 }
