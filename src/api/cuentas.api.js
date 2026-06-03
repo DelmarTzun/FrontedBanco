@@ -13,6 +13,22 @@ export const cuentasApi = {
     return data; // CuentahabienteCreadoDto
   },
 
+  /**
+   * PUT /api/Cuentahabientes/{idCliente}  (ADMIN)
+   * Actualiza nombre, apellido, NIT, celular y correo del cliente.
+   * El DPI permanece inmutable. Devuelve CuentahabienteActualizadoDto.
+   */
+  async actualizarPerfil(idCliente, { nombre, apellido, nit, celular, email }) {
+    const { data } = await http.put(`/Cuentahabientes/${idCliente}`, {
+      Nombre: nombre,
+      Apellido: apellido,
+      Nit: nit,
+      telefono: celular ?? null,
+      Email: email ?? null,
+    });
+    return data;
+  },
+
   /** POST /api/Cuentahabientes/tarjeta  (ADMIN) */
   async asociarTarjeta(idCuenta) {
     const { data } = await http.post('/Cuentahabientes/tarjeta', {

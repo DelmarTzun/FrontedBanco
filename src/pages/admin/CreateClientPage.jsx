@@ -46,7 +46,9 @@ export default function CreateClientPage() {
 
   const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  // Validaciones campo a campo
+  // Validaciones campo a campo. Correo y celular son OBLIGATORIOS porque son
+  // los canales por los que el banco entrega credenciales y notificaciones al
+  // cliente recién creado: sin ellos el flujo de onboarding queda incompleto.
   const errores = {
     nombre: !form.nombre.trim() ? 'Ingresa el nombre.' : null,
     apellido: !form.apellido.trim() ? 'Ingresa el apellido.' : null,
@@ -57,8 +59,12 @@ export default function CreateClientPage() {
         : !REGLAS.nit.regex.test(form.nit.trim()) && form.nit.trim().toUpperCase() !== 'CF'
         ? 'NIT no válido. Usa solo números (con opción a dígito verificador o K).'
         : null,
-    email: validarEmail(form.email),
-    celular: validarTelefonoGT(form.celular),
+    email: !form.email.trim()
+      ? 'El correo electrónico es obligatorio.'
+      : validarEmail(form.email),
+    celular: !form.celular.trim()
+      ? 'El teléfono celular es obligatorio.'
+      : validarTelefonoGT(form.celular),
   };
   const hayErrores = Object.values(errores).some(Boolean);
 
@@ -175,9 +181,11 @@ export default function CreateClientPage() {
                   type="email"
                   value={form.email}
                   onChange={onChange}
+                  required
                   leftIcon={Mail}
                   maxLength={LIMITES_DB.cliente.email}
                   autoComplete="email"
+                  hint="Obligatorio · canal para enviar credenciales"
                   error={form.email ? errores.email : null}
                 />
                 <Input
@@ -190,10 +198,11 @@ export default function CreateClientPage() {
                       celular: soloDigitosMax(e.target.value, 8),
                     }))
                   }
+                  required
                   leftIcon={Phone}
                   maxLength={8}
                   inputMode="numeric"
-                  hint="8 dígitos"
+                  hint="Obligatorio · 8 dígitos"
                   error={form.celular ? errores.celular : null}
                 />
               </div>

@@ -20,6 +20,7 @@ const SettingsPage = lazy(() => import('../pages/client/SettingsPage'));
 const AdminDashboardPage = lazy(() => import('../pages/admin/AdminDashboardPage'));
 const ClientsPage = lazy(() => import('../pages/admin/ClientsPage'));
 const CreateClientPage = lazy(() => import('../pages/admin/CreateClientPage'));
+const UpdateClientPage = lazy(() => import('../pages/admin/UpdateClientPage'));
 const ActivateAccountPage = lazy(() => import('../pages/admin/ActivateAccountPage'));
 const DepositsPage = lazy(() => import('../pages/admin/DepositsPage'));
 const ServicePaymentsCounterPage = lazy(() =>
@@ -67,6 +68,7 @@ export default function AppRoutes() {
           <Route index element={<AdminDashboardPage />} />
           <Route path="clientes" element={<ClientsPage />} />
           <Route path="crear-cliente" element={<CreateClientPage />} />
+          <Route path="actualizar-cliente" element={<UpdateClientPage />} />
           <Route path="activar-cuenta" element={<ActivateAccountPage />} />
           <Route path="depositos" element={<DepositsPage />} />
           <Route
