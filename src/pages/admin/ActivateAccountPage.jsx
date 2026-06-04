@@ -7,9 +7,14 @@ import Button from '../../components/ui/Button';
 import { operacionesApi } from '../../api/operaciones.api';
 import { pushToast } from '../../store/notificationStore';
 import { fmtMoney } from '../../lib/format';
-import { soloDigitosMax, validarIdCuenta } from '../../lib/validaciones';
+import {
+  soloDigitosMax,
+  validarIdCuenta,
+  LIMITES_OPERACION,
+} from '../../lib/validaciones';
 
 const MONTO_MINIMO_APERTURA = 100;
+const MONTO_MAXIMO_APERTURA = LIMITES_OPERACION.MONTO_MAXIMO_OPERACION;
 
 export default function ActivateAccountPage() {
   const [idCuenta, setIdCuenta] = useState('');
@@ -18,10 +23,17 @@ export default function ActivateAccountPage() {
   const [result, setResult] = useState(null);
 
   const idErr = idCuenta ? validarIdCuenta(idCuenta) : null;
-  const montoErr =
-    monto && Number(monto) < MONTO_MINIMO_APERTURA
-      ? `El depósito mínimo de apertura es Q${MONTO_MINIMO_APERTURA}.00.`
-      : null;
+  const montoNum = Number(monto);
+  let montoErr = null;
+  if (monto) {
+    if (!Number.isFinite(montoNum)) {
+      montoErr = 'El monto debe ser un número válido.';
+    } else if (montoNum < MONTO_MINIMO_APERTURA) {
+      montoErr = `El depósito mínimo de apertura es Q${MONTO_MINIMO_APERTURA}.00.`;
+    } else if (montoNum > MONTO_MAXIMO_APERTURA) {
+      montoErr = `El depósito de apertura no puede exceder Q${MONTO_MAXIMO_APERTURA.toLocaleString('es-GT')}.`;
+    }
+  }
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +44,7 @@ export default function ActivateAccountPage() {
         message:
           idErr ||
           montoErr ||
-          `Indica el ID de la cuenta y un monto ≥ Q${MONTO_MINIMO_APERTURA}.`,
+          `Indica el ID de la cuenta y un monto entre Q${MONTO_MINIMO_APERTURA} y Q${MONTO_MAXIMO_APERTURA.toLocaleString('es-GT')}.`,
       });
       return;
     }
@@ -88,10 +100,11 @@ export default function ActivateAccountPage() {
                   type="number"
                   step="0.01"
                   min={MONTO_MINIMO_APERTURA}
+                  max={MONTO_MAXIMO_APERTURA}
                   value={monto}
                   onChange={(e) => setMonto(e.target.value)}
                   leftIcon={Coins}
-                  hint={`Mínimo Q${MONTO_MINIMO_APERTURA}.00`}
+                  hint={`Entre Q${MONTO_MINIMO_APERTURA}.00 y Q${MONTO_MAXIMO_APERTURA.toLocaleString('es-GT')}.00`}
                   error={montoErr}
                 />
               </div>

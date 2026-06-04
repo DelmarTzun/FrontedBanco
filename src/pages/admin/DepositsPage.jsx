@@ -28,7 +28,8 @@ import { getTipoCuenta } from '../../lib/tipoCuenta';
 import { getEstadoCuenta } from '../../lib/estadoCuenta';
 import {
   LIMITES_DB,
-  validarMontoPositivo,
+  LIMITES_OPERACION,
+  validarMontoOperacion,
 } from '../../lib/validaciones';
 import clsx from 'clsx';
 
@@ -123,7 +124,7 @@ export default function DepositsPage() {
   };
 
   /* ---------------- Validaciones del formulario ---------------- */
-  const montoErr = monto ? validarMontoPositivo(monto) : null;
+  const montoErr = monto ? validarMontoOperacion(monto, 'depósito') : null;
   const puedeDepositar =
     !!cuentaSel &&
     !montoErr &&
@@ -366,11 +367,13 @@ export default function DepositsPage() {
                     type="number"
                     step="0.01"
                     min="0.01"
+                    max={LIMITES_OPERACION.MONTO_MAXIMO_OPERACION}
                     value={monto}
                     onChange={(e) => setMonto(e.target.value)}
                     placeholder="0.00"
                     leftIcon={Coins}
                     error={montoErr}
+                    hint={`Tope por operación: Q${LIMITES_OPERACION.MONTO_MAXIMO_OPERACION.toLocaleString('es-GT')}.00`}
                     disabled={!cuentaSel || enviando}
                   />
                   <Input

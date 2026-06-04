@@ -107,3 +107,35 @@ export const validarIdCuenta = (v) =>
   Number.isInteger(+v) && +v > 0
     ? null
     : 'El ID de cuenta debe ser un número entero positivo.';
+
+/* ------------------------------------------------------------------ *
+ * Topes operativos del banco. DEBEN coincidir con los del backend
+ * (API_Banco.Application.Services.Internos.ValidadoresEntrada).
+ * ------------------------------------------------------------------ */
+
+/**
+ * Tope máximo permitido en una sola operación de ingreso de efectivo:
+ * - depósito por ventanilla (admin),
+ * - activación de cuenta con saldo inicial.
+ *
+ * El frontend lo aplica como validación temprana; el backend lo aplica
+ * como blindaje final. Cambios aquí requieren cambiar también el backend.
+ */
+export const LIMITES_OPERACION = {
+  MONTO_MAXIMO_OPERACION: 50_000,
+};
+
+/**
+ * Valida un monto contra el tope operativo del banco. Devuelve null si OK
+ * o un mensaje de error legible si excede el tope o no es positivo.
+ */
+export const validarMontoOperacion = (v, etiqueta = 'monto') => {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) {
+    return `El ${etiqueta} debe ser mayor a cero.`;
+  }
+  if (n > LIMITES_OPERACION.MONTO_MAXIMO_OPERACION) {
+    return `El ${etiqueta} no puede exceder Q${LIMITES_OPERACION.MONTO_MAXIMO_OPERACION.toLocaleString('es-GT')}.`;
+  }
+  return null;
+};
